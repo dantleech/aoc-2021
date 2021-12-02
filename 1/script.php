@@ -10,7 +10,7 @@ echo array_reduce(
             )
         )
     ), 
-    static function (int $count, int $number) {
+    static function (int $count, int $number): int {
         static $prev = PHP_INT_MAX;
         $count += $number > $prev ? 1 : 0;
         $prev = $number;
