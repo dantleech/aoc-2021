@@ -16,21 +16,23 @@ class Seg {
 class Diagram {
     private array $grid = [];
     public function plot(Seg $seg): void {
-        $xRange = range($seg->start->x, $seg->end->x);
-        $yRange = range($seg->start->y, $seg->end->y);
-        if ($seg->isStraight()) {
-            foreach ($xRange as $x) {
-                foreach ($yRange as $y) {
-                    $this->inc($x, $y);
+        (function (array $xRange, array $yRange) use ($seg) {
+            if ($seg->isStraight()) {
+                foreach ($xRange as $x) {
+                    foreach ($yRange as $y) {
+                        $this->inc($x, $y);
+                    }
                 }
             }
-        }
-        if ($seg->isDiagonal()) {
-            foreach (range($seg->start->x, $seg->end->x) as $i => $x) {
-                $y = $yRange[$i];
-                $this->inc($x, $y);
+            if ($seg->isDiagonal()) {
+                foreach (range($seg->start->x, $seg->end->x) as $i => $x) {
+                    $this->inc($x, $yRange[$i]);
+                }
             }
-        }
+        })(
+            range($seg->start->x, $seg->end->x), 
+            range($seg->start->y, $seg->end->y),
+        );
     }
     public static function plotFromSegments(array $segments): Diagram {
         return array_reduce($segments, function (Diagram $dia, Seg $seg) {
