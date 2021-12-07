@@ -2,17 +2,23 @@
 
 $positions = array_map('intval', explode(',',trim(file_get_contents(__DIR__ . '/input'))));
 
-$mean = array_sum($positions) / count($positions);
-$min = null;
-$offset = null;
-for ($o = min($positions); $o <= max($positions); $o++) {
-    $costs = array_map(fn (int $pos) => abs($pos - $o), $positions);
-    $costs = array_map(fn (int $c) => array_sum(range(0, $c)), $costs);
-    $total = array_sum($costs);
+[ $min, $pos ] = array_reduce(range(min($positions), max($positions)), function (array $mt, int $o) use ($positions) {
+    [$min, $offset] = $mt;
 
-    if (null === $min || $total < $min) {
-        $min = $total;
+    $fuel = array_sum(array_map(
+        fn (int $c) => $c * ($c + 1) / 2,
+        array_map(
+            fn (int $pos) => abs($pos - $o),
+            $positions
+        )
+    ));
+
+    if (null === $min || $fuel < $min) {
+        $min = $fuel;
         $offset = $o;
     }
-}
-var_dump($min, $offset);
+
+    return [$min, $offset];
+}, [null, null]);
+
+var_dump($min, $pos);
