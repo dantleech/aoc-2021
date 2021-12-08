@@ -48,46 +48,7 @@ function byNbMatchingSegmentsIn(array $set, int $count, array $list) {
     );
 }
 
-
-/**
- *  0000 
- * 1    2
- * 1    2
- *  3333 
- * 4    5
- * 4    5
- *  6666 
- */
 class Display {
-    public $candidates = [
-        0 => [],
-        1 => [],
-        2 => [],
-        3 => [],
-        4 => [],
-        5 => [],
-        6 => [],
-    ];
-    const PATTERNS = [
-        1 => [2, 5],
-        2 => [0, 2, 3, 4, 6],
-        3 => [0, 2, 3, 4, 5, 6],
-        3 => [0, 2, 3, 5, 6],
-        4 => [1, 3, 2, 5],
-        5 => [0, 1, 3, 5, 6],
-        6 => [0, 1, 3, 4, 5, 6],
-        7 => [0, 2, 5],
-        8 => [0, 1, 2, 3, 4, 4, 6],
-    ];
-}
-
-class DisplayController {
-    const LENGTHS = [
-        2 => 1,
-        4 => 4,
-        3 => 7,
-        7 => 8,
-    ];
     public function __construct(public array $sigc, public array $display) {
     }
 
@@ -125,7 +86,7 @@ class DisplayController {
             doesNotContain($six, doesNotContain($nine, byLength($this->sigc, 6)))
         );
 
-        $segments = [
+        return [
             0 => $zero,
             1 => $one,
             2 => $two,
@@ -137,8 +98,6 @@ class DisplayController {
             8 => $eight,
             9 => $nine,
         ];
-
-        return $segments;
     }
 
     /**
@@ -241,14 +200,6 @@ class DisplayController {
 class Hud {
     public function __construct(/** @var Display[] */public array $displays) {
     }
-    public function countUnique(): int { 
-        $count = 0;
-        foreach ($this->displays as $display) {
-            $count+= $display->countUnique();
-        }
-
-        return $count;
-    }
     public function resolve(): int {
         $total = 0;
         foreach ($this->displays as $display) {
@@ -261,7 +212,7 @@ class Hud {
 $hud = new Hud(array_map(function (string $line) {
     [$sigc, $display] = explode(' | ', $line);
     $conv = fn (string $charString) => array_map('str_split', explode(' ', $charString));
-    return new DisplayController($conv($sigc), $conv($display));
+    return new Display($conv($sigc), $conv($display));
 }, explode("\n", trim(file_get_contents(__DIR__ . '/input')))));
 
 echo $hud->resolve();
