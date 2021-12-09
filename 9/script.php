@@ -1,60 +1,89 @@
 <?php
 
-$grid = array_map(
+$grid = new Grid(array_map(
     fn ($line) => str_split($line),
-    explode("\n", trim(file_get_contents(__DIR__ . '/testinput')))
-);
+    explode("\n", trim(file_get_contents(__DIR__ . '/input')))
+));
+
+class Points {
+    public function __construct(public array $points) {
+    }
+
+    public function riskLevelSum(): int
+    {
+        return array_sum(array_map(fn (Point $p) => $p->depth + 1, $this->points));
+    }
+}
+
+class Grid {
+    public function __construct(public array $grid) {
+    }
+
+    public function points(): array
+    {
+        $points = [];
+        foreach ($this->grid as $y => $row) {
+            foreach ($row as $x => $depth) {
+                $points[] =  new Point($x, $y, $depth);
+            }
+        }
+
+        return $points;
+    }
+
+    public function getLowPoints(): Points
+    {
+        return new Points(array_filter($this->points(), function (Point $p) {
+            return $p->isLowest($this);
+        }));
+    }
+
+    public function below(Point $point): Point
+    {
+        return $this->pointAt($point->x + 1, $point->y);
+    }
+
+    public function leftOf(Point $point): Point
+    {
+        return $this->pointAt($point->x, $point->y - 1);
+    }
+
+    public function rightOf(Point $point): Point
+    {
+        return $this->pointAt($point->x, $point->y + 1);
+    }
+
+    public function above(Point $point): Point
+    {
+        return $this->pointAt($point->x - 1, $point->y);
+    }
+
+    private function pointAt(int $x, int $y): Point
+    {
+        if (isset($this->grid[$y][$x])) {
+            return new Point($x, $y, $this->grid[$y][$x]);
+        }
+
+        return new Point($x, $y, PHP_INT_MAX);
+    }
+}
 
 class Point {
-    public function __construct(public $x, public $y){}
-
-    public function value(array $grid)
-    {
-        return $grid[$this->y][$this->x];
+    public function __construct(public int $x, public int $y, public int $depth){
     }
 
-    public function hash()
-    {
-        return sprintf('%s.%s', $this->x, $this->y);
-    }
-
-    public function isLowest(array $grid)
+    public function isLowest(Grid $grid)
     {
         return
-            $this->up()->lowerThan($grid, $this) &&
-            $this->down()->lowerThan($grid, $this) &&
-            $this->left()->lowerThan($grid, $this) &&
-            $this->right()->lowerThan($grid, $this);
+            $this->lowerThan($grid->above($this)) &&
+            $this->lowerThan($grid->below($this)) &&
+            $this->lowerThan($grid->leftOf($this)) &&
+            $this->lowerThan($grid->rightOf($this));
     }
 
-    public function lowerThan(array $grid, Point $point)
+    public function lowerThan(Point $point)
     {
-        return $this->value($grid) < $point->value($grid);
-    }
-
-    public function up(): self
-    {
-        return new self($this->x, $this->y - 1);
-    }
-
-    public function down(): self
-    {
-        return new self($this->x, $this->y + 1);
-    }
-
-    public function left(): self
-    {
-        return new self($this->x - 1, $this->y);
-    }
-
-    public function right(): self
-    {
-        return new self($this->x + 1, $this->y);
-    }
-
-    public function existsIn(array $grid)
-    {
-        return isset($grid[$this->y][$this->x]);
+        return $this->depth < $point->depth;
     }
 }
 
@@ -65,22 +94,5 @@ class Point {
  * 8767896789
  * 9899965678
  */
-function getLowPoints(
-    array $grid,
-    Point $point
-) {
-    if (!$point->existsIn($grid)) {
-        return null;
-    }
-    if ($point->isLowest($grid)) {
-        $lowPoints[] = $point;
-    }
-
-    getLowPoints($grid, $point->left());
-    getLowPoints($grid, $point->down());
-
-    return $lowPoints;
-}
-
-var_dump(getLowPoints($grid, new Point(0, 0)));
+echo $grid->getLowPoints()->riskLevelSum();
 
