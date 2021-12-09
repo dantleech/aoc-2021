@@ -101,16 +101,10 @@ class Grid {
 
         $seen[$op->hash()] = true;
 
-        $oints = [
-            $op
-        ];
-
         foreach ([[ 1, 0 ], [ -1, 0 ], [ 0, 1], [ 0, -1]] as [ $xo, $yo ]) {
             $point = $op;
             do {
-                if ($point !== $op) {
-                    $points[] = $point;
-                }
+                $points[] = $point;
                 $point = $this->pointAt($point->x + $xo, $point->y + $yo);
             } while ($point->depth < 9);
         }
@@ -156,10 +150,10 @@ class Point {
  * 9899965678
  */
 $sizes = [];
-$lowest = $grid->getLowPoints()->points;
-    echo sprintf("%s/%s\n", $i, count($lowest));
+foreach ($grid->getLowPoints()->points as $i => $point) {
     $sizes[] = $grid->getBasin($point)->count();
 }
 sort($sizes);
-var_dump(array_product(array_slice($sizes, -3)));
+
+echo array_product(array_slice($sizes, -3));
 
