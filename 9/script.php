@@ -5,13 +5,39 @@ $grid = new Grid(array_map(
     explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 ));
 
-class Points {
+class Points implements IteratorAggregate {
     public function __construct(public array $points) {
     }
 
     public function riskLevelSum(): int
     {
         return array_sum(array_map(fn (Point $p) => $p->depth + 1, $this->points));
+    }
+
+    public function merge(Points $points): Points
+    {
+        $map = [];
+        foreach ($this as $point) {
+            $map[$point->hash()] = $point;
+        }
+        foreach ($points as $point) {
+            $map[$point->hash()] = $point;
+        }
+
+        return new Points(array_values($map));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIterator()
+    {
+        return new ArrayIterator($this->points);
+    }
+
+    public function count(): int
+    {
+        return count($this->points);
     }
 }
 
@@ -33,29 +59,29 @@ class Grid {
 
     public function getLowPoints(): Points
     {
-        return new Points(array_filter($this->points(), function (Point $p) {
+        return new Points(array_values(array_filter($this->points(), function (Point $p) {
             return $p->isLowest($this);
-        }));
+        })));
     }
 
     public function below(Point $point): Point
     {
-        return $this->pointAt($point->x + 1, $point->y);
+        return $this->pointAt($point->x, $point->y + 1);
     }
 
     public function leftOf(Point $point): Point
     {
-        return $this->pointAt($point->x, $point->y - 1);
+        return $this->pointAt($point->x - 1, $point->y);
     }
 
     public function rightOf(Point $point): Point
     {
-        return $this->pointAt($point->x, $point->y + 1);
+        return $this->pointAt($point->x + 1, $point->y);
     }
 
     public function above(Point $point): Point
     {
-        return $this->pointAt($point->x - 1, $point->y);
+        return $this->pointAt($point->x, $point->y - 1);
     }
 
     private function pointAt(int $x, int $y): Point
@@ -65,6 +91,36 @@ class Grid {
         }
 
         return new Point($x, $y, PHP_INT_MAX);
+    }
+
+    public function getBasin(Point $op, array &$seen = []): Points
+    {
+        if (isset($seen[$op->hash()])) {
+            return new Points([]);
+        }
+
+        $seen[$op->hash()] = true;
+
+        $oints = [
+            $op
+        ];
+
+        foreach ([[ 1, 0 ], [ -1, 0 ], [ 0, 1], [ 0, -1]] as [ $xo, $yo ]) {
+            $point = $op;
+            do {
+                if ($point !== $op) {
+                    $points[] = $point;
+                }
+                $point = $this->pointAt($point->x + $xo, $point->y + $yo);
+            } while ($point->depth < 9);
+        }
+
+        $points = new Points($points);
+        foreach ($points as $point) {
+            $points = $points->merge($this->getBasin($point, $seen));
+        }
+
+        return $points;
     }
 }
 
@@ -85,6 +141,11 @@ class Point {
     {
         return $this->depth < $point->depth;
     }
+
+    public function hash(): string
+    {
+        return sprintf('%s,%s', $this->x, $this->y);
+    }
 }
 
 /**
@@ -94,5 +155,11 @@ class Point {
  * 8767896789
  * 9899965678
  */
-echo $grid->getLowPoints()->riskLevelSum();
+$sizes = [];
+$lowest = $grid->getLowPoints()->points;
+    echo sprintf("%s/%s\n", $i, count($lowest));
+    $sizes[] = $grid->getBasin($point)->count();
+}
+sort($sizes);
+var_dump(array_product(array_slice($sizes, -3)));
 
