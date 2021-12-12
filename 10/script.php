@@ -2,58 +2,74 @@
 
 $lines = array_map(
     fn (string $line): array => str_split($line),
-    explode("\n", trim(file_get_contents(__DIR__ . '/testinput')))
+    explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 );
 
+$parser = new Parser();
+
+$errors = 0;
 foreach ($lines as $i => $line) {
-    try {
-        parse($line);
-    } catch (Exception $e) {
-        echo sprintf('Error on line "%s": %s', $i, $e->getMessage()) . PHP_EOL;
+    $err = $parser->parse($line);
+    if (null !== $err) {
+        $errors+= $err;
     }
 }
 
-/**
- * - Is character open char?
- *   - Yes: Add to stack, parse [ ( ]
- *   - No: Pop from stack, is [] => (
- *
- * ()
- *
- * - is open? add to stack
- * - is close?
- * [ ( { ( < ( () )[]>[[{[]{<()<>>
- */
-function parse(array &$chars): void {
-    $o = [
+echo $errors . PHP_EOL;
+
+class Parser {
+    private const PARENS = [
         '{' => '}',
         '[' => ']',
         '(' => ')',
         '<' => '>',
     ];
-    $c = array_flip($o);
+    /**
+     * - Is character open char?
+     *   - Yes: Add to stack, parse [ ( ]
+     *   - No: Pop from stack, is [] => (
+     *
+     * ()
+     *
+     * - is open? add to stack
+     * - is close?
+     * [ ( { ( < ( () )[]>[[{[]{<()<>>
+     */
+    public function parse(array $chars): ?int {
+        $start = array_shift($chars);
+        $stack = [];
 
-    $start = array_shift($chars);
+        foreach ($chars as $i => $char) {
+            if (isset(self::PARENS[$char])) {
+                $stack[] = $char;
+                continue;
+            }
 
-    $stack = [];
+            $s = array_pop($stack);
 
-    foreach ($chars as $i => $char) {
-        if (isset($o[$char])) {
-            $stack[] = $char;
-            continue;
+            if (null === $s) {
+                return null;
+            }
+            $expect = self::PARENS[$s];
+
+            if ($expect != $char) {
+                return $this->errorCode($char);
+            }
         }
 
-        $s = array_pop($stack);
+        return null;
+    }
 
-        if (null === $s) {
-            return;
-        }
-        $expect = $o[$s];
-        if ($expect != $char) {
-            throw new RuntimeException(sprintf(
-                'Expected "%s" got "%s"',
-                $expect, $char
-            ));
-        }
+    private function errorCode($char): int
+    {
+        return match ($char) {
+            ')' => 3,
+            ']' => 57,
+            '}' => 1197,
+            '>' => 25137,
+        };
     }
 }
+
+
+
