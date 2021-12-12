@@ -4,19 +4,6 @@ $lines = array_map(
     fn (string $line): array => str_split($line),
     explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 );
-
-$parser = new Parser();
-
-$errors = 0;
-foreach ($lines as $i => $line) {
-    $err = $parser->parse($line);
-    if (null !== $err) {
-        $errors+= $err;
-    }
-}
-
-echo $errors . PHP_EOL;
-
 class Parser {
     private const PARENS = [
         '{' => '}',
@@ -24,19 +11,8 @@ class Parser {
         '(' => ')',
         '<' => '>',
     ];
-    /**
-     * - Is character open char?
-     *   - Yes: Add to stack, parse [ ( ]
-     *   - No: Pop from stack, is [] => (
-     *
-     * ()
-     *
-     * - is open? add to stack
-     * - is close?
-     * [ ( { ( < ( () )[]>[[{[]{<()<>>
-     */
-    public function parse(array $chars): ?int {
-        $start = array_shift($chars);
+    
+    public function parse(array $chars): Result {
         $stack = [];
 
         foreach ($chars as $i => $char) {
@@ -48,28 +24,62 @@ class Parser {
             $s = array_pop($stack);
 
             if (null === $s) {
-                return null;
+                return new Result(0, []);
             }
+
             $expect = self::PARENS[$s];
 
             if ($expect != $char) {
-                return $this->errorCode($char);
+                return Result::fromInvalidChar($char);
             }
         }
 
-        return null;
+        return new Result(0, array_map(fn (string $char) => self::PARENS[$char], array_reverse($stack)));
+    }
+}
+
+final class Result {
+    public function __construct(public int $err, public array $completion) {
     }
 
-    private function errorCode($char): int
-    {
-        return match ($char) {
+    public static function fromInvalidChar(string $char): self {
+        return new self(match ($char) {
             ')' => 3,
             ']' => 57,
             '}' => 1197,
             '>' => 25137,
-        };
+        }, []);
+    }
+
+    public function completionScore(): int {
+        $total = 0;
+        foreach ($this->completion as $char) {
+            $total *= 5;
+            $total += match ($char) {
+                ')' => 1,
+                ']' => 2,
+                '}' => 3,
+                '>' => 4,
+            };
+        }
+
+        return $total;
     }
 }
 
 
 
+$parser = new Parser();
+$errors = 0;
+$compScores = [];
+foreach ($lines as $i => $line) {
+    $r = $parser->parse($line);
+    $errors += $r->err;
+
+    if ($r->completion) {
+        $compScores[] = $r->completionScore();
+    }
+}
+
+sort($compScores);
+echo $compScores[count($compScores) / 2] . "\n";
