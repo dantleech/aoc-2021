@@ -30,7 +30,27 @@ class Grid {
         return $grid;
     }
 
-    private function flash(array $flashed = []): self {
+    public function allFlashed(): bool {
+        foreach ($this->grid as $y => $octopi) {
+            foreach ($octopi as $x => $energy) {
+                if ($energy !== 0) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public function size(): int {
+        foreach ($this->grid as $chars) {
+            return count($this->grid) * count($chars);
+        }
+
+        return 0;
+    }
+
+    private function flash(array $flashed = []): array {
         $didFlash = false;
         foreach ($this->grid as $y => $octopi) {
             foreach ($octopi as $x => $energy) {
@@ -64,7 +84,7 @@ class Grid {
             $this->flash($flashed);
         }
 
-        return $this;
+        return $flashed;
     }
 
     public function apply(array $flashed, int $x, int $y, Closure $closure): void {
@@ -99,10 +119,12 @@ class Grid {
 }
 
 $nbFlashes = 0;
-for ($s = 0; $s < 100; $s++) {
+$stage = 1;
+while (!$grid->allFlashed()) {
     $grid = $grid->increment();
     $nbFlashes+= $grid->nbFlashes;
-    echo $grid->toString().PHP_EOL.PHP_EOL;
+    echo sprintf("Stage: %s\n%s", $stage++, $grid->toString()).PHP_EOL.PHP_EOL;
+
 }
 
 echo $nbFlashes . PHP_EOL;
