@@ -32,8 +32,9 @@ class PathFinder {
     public function walk(
         string $node,
         array $path = [],
-        array $seen = [],
+        array &$seen = [],
         array $smalls = [],
+        int $smallCount = 0,
     ) {
         if (!isset($smalls[$node])) {
             $smalls[$node] = 0;
@@ -47,7 +48,6 @@ class PathFinder {
         }
 
         if ($this->isSmall($node) && in_array($node, $path)) {
-            // small cave has been visited
             if ($this->haveAnyBeenVisitedTwice($smalls)) {
                 return $seen;
             }
@@ -89,19 +89,13 @@ class PathFinder {
 
     private function haveAnyBeenVisitedTwice(array $smalls)
     {
-        foreach ($smalls as $count) {
-            if ($count === 2) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array(2, $smalls);
     }
 }
 
 $f = new PathFinder(array_map(
     fn(string $line) => explode('-', $line),
-    explode("\n", trim(file_get_contents(__DIR__ . '/testinput')))
+    explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 ));
 
 var_dump(count(array_filter(array_keys($f->findPath()), fn ($line) => substr($line, -3) === 'end')));
