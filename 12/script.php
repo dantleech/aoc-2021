@@ -1,13 +1,7 @@
 <?php
 
-// has any small cave been visited twice?
-// yes: has this cave been visited twice? return
-// no: has this cave been visited once?
 class PathFinder {
     private array $graph;
-
-    private array $segments;
-
 
     public function __construct(array $segments) {
         foreach ($segments as [$from, $to]) {
@@ -21,20 +15,13 @@ class PathFinder {
             $this->graph[$to][] = $from;
         }
         $this->graph = array_map(fn (array $nodes) => array_unique($nodes), $this->graph);
-        $this->segments = $segments;
-    }
-
-    public function findPath(): array
-    {
-        return $this->walk('start');
     }
 
     public function walk(
         string $node,
         array $path = [],
         array &$seen = [],
-        array $smalls = [],
-        int $smallCount = 0,
+        array $smalls = []
     ) {
         if (!isset($smalls[$node])) {
             $smalls[$node] = 0;
@@ -98,4 +85,11 @@ $f = new PathFinder(array_map(
     explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 ));
 
-var_dump(count(array_filter(array_keys($f->findPath()), fn ($line) => substr($line, -3) === 'end')));
+var_dump(count(
+    array_filter(
+        array_keys(
+            $f->walk('start')
+        ),
+        fn ($line) => substr($line, -3) === 'end'
+    )
+));
