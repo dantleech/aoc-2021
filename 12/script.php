@@ -1,7 +1,7 @@
 <?php
 
 class PathFinder {
-    private array $graph = [];
+    private array $graph;
 
     public function __construct(array $segments) {
         foreach ($segments as [$from, $to]) {
@@ -22,34 +22,30 @@ class PathFinder {
         return $this->walk('start');
     }
 
-    public function walk(string $node, array $smallCaves = [], $path = []) {
-        if ($path[array_key_last($path)] === 'end') {
-            return $path;
-        }
-
-        // if we saw this small cave before
-        if (isset($smallCaves[$node])) {
-            return $path;
+    public function walk(string $node, array $path = [], array $seen = []) {
+        if ($this->isSmall($node) && in_array($node, $path)) {
+            return $seen;
         }
 
         $path[] = $node;
+        $hash = implode(',',$path);
 
         if ($node === 'end') {
-            return $path;
+            $seen[$hash] = $node;
+            return $seen;
         }
 
-        if ($this->isSmall($node)) {
-            $smallCaves[$node] = true;
+        if (array_key_exists($hash, $seen)) {
+            return $seen;
         }
+
+        $seen[$hash] = $node;
 
         foreach ($this->graph[$node] as $to) {
-            if ($to === 'start') {
-                continue;
-            }
-            $path = $this->walk($to, $smallCaves, $path);
+            $seen = $this->walk($to, $path, $seen);
         }
 
-        return $path;
+        return $seen;
     }
 
     private function isSmall(string $to): bool
@@ -60,6 +56,7 @@ class PathFinder {
 
 $f = new PathFinder(array_map(
     fn(string $line) => explode('-', $line),
-    explode("\n", trim(file_get_contents(__DIR__ . '/testinput')))
+    explode("\n", trim(file_get_contents(__DIR__ . '/input')))
 ));
-var_dump($f->findPath());
+
+var_dump(count(array_filter(array_keys($f->findPath()), fn ($line) => substr($line, -3) === 'end')));
