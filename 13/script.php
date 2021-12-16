@@ -15,8 +15,13 @@ class Grid {
     public function __construct(public array $points) {
     }
 
-    public static function fromPoints(array $array)
+    public function fold(Fold $fold): Grid
     {
+        if ($fold->axes === 'y') {
+            return $this->foldY($fold->pos);
+        }
+
+        return $this->foldX($fold->pos);
     }
 
     public function toString(): string
@@ -38,47 +43,22 @@ class Grid {
         return implode("\n", array_map(fn (array $chars) => implode('', $chars), $grid)) ."\n\n";
     }
 
-    public function fold(Fold $fold): Grid
+    private function foldY(int $pos, int $xo, int $yo): Grid
     {
-        if ($fold->axes === 'y') {
-            return $this->foldY($fold->pos);
-        }
-        return $this->foldX($fold->pos);
+        $side = array_filter($this->points, fn (Point $point) => $point->y >= $pos);
+        $side = array_map(fn (Point $point) => new Point($point->x, $pos + (($point->y - $pos) * - 1)), $side);
+        $side = array_filter($side, fn (Point $point) => $point->y >= 0 && $point->y <= $pos);
+
+        return (new Grid($side))->merge($this)->truncateY($pos);
     }
 
-    private function foldY(int $int): Grid
+    private function foldX(int $pos): Grid
     {
-        $side = array_filter(
-            $this->points,
-            fn (Point $point) => $point->y >= $int
-        );
-        $side = array_map(
-            fn (Point $point) => new Point($point->x, $int + (($point->y - $int) * - 1)),
-            $side
-        );
-        $side = array_filter(
-            $side,
-            fn (Point $point) => $point->y >= 0 && $point->y <= $int
-        );
+        $side = array_filter($this->points, fn (Point $point) => $point->x >= $pos);
+        $side = array_map(fn (Point $point) => new Point($pos + (($point->x - $pos) * - 1), $point->y), $side);
+        $side = array_filter($side, fn (Point $point) => $point->x >= 0 && $point->x <= $pos);
 
-        return (new Grid($side))->merge($this)->truncateY($int);
-    }
-
-    private function foldX(int $int): Grid
-    {
-        $side = array_filter(
-            $this->points,
-            fn (Point $point) => $point->x >= $int
-        );
-        $side = array_map(
-            fn (Point $point) => new Point($int + (($point->x - $int) * - 1), $point->y),
-            $side
-        );
-        $side = array_filter(
-            $side,
-            fn (Point $point) => $point->x >= 0 && $point->x <= $int
-        );
-        return (new Grid($side))->merge($this)->truncateX($int);
+        return (new Grid($side))->merge($this)->truncateX($pos);
     }
 
     private function merge(Grid $g): Grid
@@ -103,7 +83,6 @@ class Grid {
     {
         return new Grid(array_filter($this->points, fn (Point $p) => $p->x <= $int));
     }
-
 }
 
 foreach ($folds as $fold) {
