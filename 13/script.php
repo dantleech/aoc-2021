@@ -43,7 +43,7 @@ class Grid {
         return implode("\n", array_map(fn (array $chars) => implode('', $chars), $grid)) ."\n\n";
     }
 
-    private function foldY(int $pos, int $xo, int $yo): Grid
+    private function foldY(int $pos): Grid
     {
         $side = array_filter($this->points, fn (Point $point) => $point->y >= $pos);
         $side = array_map(fn (Point $point) => new Point($point->x, $pos + (($point->y - $pos) * - 1)), $side);
